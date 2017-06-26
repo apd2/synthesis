@@ -109,7 +109,7 @@ d :: Q Exp
 d = withLocatedError [| de |]
 
 --A concrete type implementing the Resource class
-newtype ResourceT r m a = ResourceT {unResourceT :: StateT (InUse r) m a} deriving (Monad)
+newtype ResourceT r m a = ResourceT {unResourceT :: StateT (InUse r) m a} deriving (Functor, Applicative, Monad)
 
 runResourceT  inUse = flip runStateT  inUse . unResourceT
 evalResourceT inUse = flip evalStateT inUse . unResourceT
@@ -117,12 +117,12 @@ evalResourceT inUse = flip evalStateT inUse . unResourceT
 instance MonadTrans (ResourceT t) where
     lift = ResourceT . lift
 
-incRef n = Map.alter func 
+incRef n = Map.alter func
     where
     func Nothing        = Just (Set.singleton n, 1)
     func (Just (ns, x)) = Just (Set.insert n ns, x+1)
 
-decRef loc = Map.alter func 
+decRef loc = Map.alter func
     where
     func Nothing       = error $ "tried to delete key that wasn't referenced: " ++ loc
     func (Just (_, 1)) = Nothing
@@ -151,7 +151,7 @@ instance MonadResource r IdentityT where
     getInUse          = return $ Map.empty
 
 runIdentityTAsResource :: (Monad m) => b -> IdentityT m a -> m (a, b)
-runIdentityTAsResource inuse f = do 
+runIdentityTAsResource inuse f = do
     res <- runIdentityT f
     return (res, inuse)
 
